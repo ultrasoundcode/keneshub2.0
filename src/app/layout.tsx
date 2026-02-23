@@ -32,7 +32,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru" className="dark">
-      <body className="min-min-h-screen bg-[#f9fafb] antialiased">{children}</body>
+      <body className="min-h-screen bg-[#f9fafb] antialiased">{children}</body>
     </html>
   );
 }
