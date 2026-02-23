@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Keneshub — AI LegalTech Platform
 
-## Getting Started
+AI-платформа для решения долговых вопросов и защиты прав заёмщиков в Казахстане.
 
-First, run the development server:
+## Стек технологий
+
+- **Frontend:** Next.js 14 (App Router), TypeScript, TailwindCSS, Framer Motion
+- **Backend:** Next.js API Routes, Prisma ORM, PostgreSQL
+- **AI:** OpenAI GPT-4o-mini
+- **Платежи:** Stripe
+- **Auth:** JWT, Google OAuth (NextAuth)
+
+## Быстрый старт
 
 ```bash
+# 1. Установить зависимости
+npm install
+
+# 2. Настроить переменные окружения
+cp .env.example .env
+# Заполните .env своими ключами
+
+# 3. Инициализировать базу данных
+npx prisma generate
+npx prisma db push
+
+# 4. Запустить dev-сервер
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Откройте [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Структура проекта
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/
+│   ├── (auth)/          # Авторизация (login, register, forgot-password)
+│   ├── admin/           # Панель администратора
+│   ├── api/             # API routes (auth, ai, stripe)
+│   ├── dashboard/       # Дашборд пользователя
+│   ├── lawyer/          # Дашборд юриста
+│   ├── layout.tsx       # Root layout
+│   ├── page.tsx         # Landing page
+│   └── globals.css      # Design system
+├── components/
+│   └── landing/         # Landing page components
+└── lib/
+    ├── auth.ts          # JWT, bcrypt utils
+    ├── openai.ts        # OpenAI client + system prompt
+    ├── prisma.ts        # Prisma client singleton
+    ├── stripe.ts        # Stripe client + plans
+    └── utils.ts         # Tailwind cn() utility
+```
 
-## Learn More
+## Переменные окружения
 
-To learn more about Next.js, take a look at the following resources:
+| Переменная | Описание |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `NEXTAUTH_SECRET` | Random secret for JWT |
+| `OPENAI_API_KEY` | OpenAI API key |
+| `STRIPE_SECRET_KEY` | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Vercel
+```bash
+npx vercel
+```
 
-## Deploy on Vercel
+### Docker
+```bash
+docker build -t keneshub .
+docker run -p 3000:3000 --env-file .env keneshub
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Лицензия
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Proprietary — все права защищены.
