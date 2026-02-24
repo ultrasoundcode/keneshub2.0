@@ -2,19 +2,42 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Shield, Mail, Lock, Eye, EyeOff, ArrowRight, Chrome } from "lucide-react";
+import { Shield, Mail, Lock, Eye, EyeOff, ArrowRight, Chrome, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({ email: "", password: "" });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // TODO: implement actual login
-    setTimeout(() => setIsLoading(false), 2000);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Неверный email или пароль");
+      }
+
+      // Success - redirect to dashboard
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,6 +73,13 @@ export default function LoginPage() {
           <span className="text-xs text-gray-400">или</span>
           <div className="flex-1 h-px bg-gray-100" />
         </div>
+
+        {error && (
+          <div className="mb-6 p-3 rounded-xl bg-red-50 border border-red-100 flex items-center gap-2 text-red-600 text-sm animate-shake">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <p>{error}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email */}

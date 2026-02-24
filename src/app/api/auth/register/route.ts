@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hashPassword, generateToken } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const registerSchema = z.object({
@@ -9,6 +10,7 @@ const registerSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  console.log("==> POST /api/auth/register started");
   try {
     const body = await req.json();
     const validation = registerSchema.safeParse(body);
@@ -22,19 +24,31 @@ export async function POST(req: NextRequest) {
 
     const { name, email, password } = validation.data;
 
-    // In production, check for existing user via Prisma
-    // const existingUser = await prisma.user.findUnique({ where: { email } });
-    // if (existingUser) return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+    // Check for existing user
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return NextResponse.json(
+        { error: "Пользователь с таким email уже существует" },
+        { status: 409 }
+      );
+    }
 
     const hashedPassword = await hashPassword(password);
 
-    // In production, create user via Prisma
-    // const user = await prisma.user.create({ data: { name, email, password: hashedPassword } });
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: "USER"
+      }
+    });
 
-    const token = generateToken({ email, name, role: "USER" });
+    const token = generateToken({ email: user.email, name: user.name || "", role: user.role });
 
     const response = NextResponse.json(
-      { success: true, user: { name, email, role: "USER" } },
+      { success: true, user: { name: user.name, email: user.email, role: user.role } },
       { status: 201 }
     );
 
@@ -48,10 +62,11 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("REGISTRATION ERROR:", error);
     return NextResponse.json(
-      { error: "Ошибка при регистрации" },
+      { error: "Ошибка при регистрации", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
 }
+

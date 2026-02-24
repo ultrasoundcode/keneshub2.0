@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyPassword, generateToken } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -21,16 +22,28 @@ export async function POST(req: NextRequest) {
 
     const { email, password } = validation.data;
 
-    // In production, find user via Prisma
-    // const user = await prisma.user.findUnique({ where: { email } });
-    // if (!user || !user.password) return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-    // const isValid = await verifyPassword(password, user.password);
-    // if (!isValid) return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    // Find user
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !user.password) {
+      return NextResponse.json(
+        { error: "Неверный email или пароль" },
+        { status: 401 }
+      );
+    }
 
-    const token = generateToken({ email, role: "USER" });
+    // Verify password
+    const isValid = await verifyPassword(password, user.password);
+    if (!isValid) {
+      return NextResponse.json(
+        { error: "Неверный email или пароль" },
+        { status: 401 }
+      );
+    }
+
+    const token = generateToken({ email: user.email, name: user.name || "", role: user.role });
 
     const response = NextResponse.json(
-      { success: true, user: { email, role: "USER" } },
+      { success: true, user: { email: user.email, name: user.name, role: user.role } },
       { status: 200 }
     );
 
@@ -38,7 +51,7 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",
     });
 
