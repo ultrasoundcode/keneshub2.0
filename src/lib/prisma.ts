@@ -9,27 +9,30 @@ const globalForPrisma = globalThis as unknown as {
 // Lazy initialization to avoid module-scope crashes
 let prismaInstance: PrismaClient;
 
+// Forced clean build - 2026-02-25
 const connectionString = process.env.DATABASE_URL;
 
 if (process.env.NODE_ENV === "production") {
-  console.log("PRISMA PRODUCTION INIT: DATABASE_URL exists =", !!connectionString, "length =", connectionString?.length, "suffix =", connectionString?.slice(-4));
+  console.log(`PRISMA PROD: DB_URL present: ${!!connectionString}, len: ${connectionString?.length}`);
   
   if (!connectionString) {
-    throw new Error("DATABASE_URL is required in production but was not found in process.env");
+    throw new Error("DATABASE_URL is missing in production environment");
   }
 
-  const pool = new Pool({ connectionString });
+  // Neon Pool initialization
+  const pool = new Pool({ connectionString: connectionString });
   // @ts-ignore
   const adapter = new PrismaNeon(pool);
+  
   prismaInstance = new PrismaClient({
     adapter,
     log: ["error"],
   });
 } else {
-  console.log("PRISMA DEV INIT: DATABASE_URL exists =", !!connectionString);
+  // Development logic
   if (!globalForPrisma.prisma) {
     if (connectionString) {
-      const pool = new Pool({ connectionString });
+      const pool = new Pool({ connectionString: connectionString });
       // @ts-ignore
       const adapter = new PrismaNeon(pool);
       globalForPrisma.prisma = new PrismaClient({
