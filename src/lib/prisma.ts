@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { Pool } from "@neondatabase/serverless";
@@ -12,7 +11,14 @@ let prismaInstance: PrismaClient;
 
 const connectionString = process.env.DATABASE_URL;
 
+if (!connectionString) {
+  console.error("CRITICAL: DATABASE_URL is not defined in environment variables!");
+}
+
 if (process.env.NODE_ENV === "production") {
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is required in production");
+  }
   const pool = new Pool({ connectionString });
   // @ts-ignore
   const adapter = new PrismaNeon(pool);
@@ -22,13 +28,19 @@ if (process.env.NODE_ENV === "production") {
   });
 } else {
   if (!globalForPrisma.prisma) {
-    const pool = new Pool({ connectionString });
-    // @ts-ignore
-    const adapter = new PrismaNeon(pool);
-    globalForPrisma.prisma = new PrismaClient({
-      adapter,
-      log: ["query", "error", "warn"],
-    });
+    if (connectionString) {
+      const pool = new Pool({ connectionString });
+      // @ts-ignore
+      const adapter = new PrismaNeon(pool);
+      globalForPrisma.prisma = new PrismaClient({
+        adapter,
+        log: ["query", "error", "warn"],
+      });
+    } else {
+      globalForPrisma.prisma = new PrismaClient({
+        log: ["query", "error", "warn"],
+      });
+    }
   }
   prismaInstance = globalForPrisma.prisma;
 }
