@@ -21,22 +21,24 @@ if (process.env.NODE_ENV === "production") {
 
   // Neon Pool initialization
   const pool = new Pool({ connectionString: connectionString });
-  // @ts-ignore
+  // @ts-expect-error
   const adapter = new PrismaNeon(pool);
   
   prismaInstance = new PrismaClient({
     adapter,
-    log: ["error"],
+    datasourceUrl: connectionString, // Pass it here too for v7!
+    log: ["error", "warn"],
   });
 } else {
   // Development logic
   if (!globalForPrisma.prisma) {
     if (connectionString) {
       const pool = new Pool({ connectionString: connectionString });
-      // @ts-ignore
+      // @ts-expect-error
       const adapter = new PrismaNeon(pool);
       globalForPrisma.prisma = new PrismaClient({
         adapter,
+        datasourceUrl: connectionString,
         log: ["query", "error", "warn"],
       });
     } else {
