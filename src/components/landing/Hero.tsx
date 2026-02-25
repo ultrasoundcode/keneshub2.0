@@ -11,7 +11,7 @@ export default function Hero() {
   const handleInput = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      const newHeight = Math.max(120, Math.min(textareaRef.current.scrollHeight, 300));
+      const newHeight = Math.max(160, Math.min(textareaRef.current.scrollHeight, 400));
       textareaRef.current.style.height = `${newHeight}px`;
     }
   };
@@ -57,7 +57,7 @@ export default function Hero() {
             onChange={handleInput}
             rows={1}
             placeholder="Опишите вашу долговую ситуацию или задайте вопрос..."
-            className="w-full bg-transparent resize-none outline-none text-zinc-900 placeholder:text-zinc-400 text-xl px-8 pt-6 pb-24 md:px-12 md:pt-8 md:pb-28 min-h-[160px] max-h-[400px] overflow-y-auto leading-relaxed scrollbar-hide"
+            className="w-full bg-transparent resize-none outline-none text-zinc-900 placeholder:text-zinc-400 text-xl px-8 pt-6 pb-28 md:px-12 md:pt-8 md:pb-32 min-h-[160px] max-h-[400px] overflow-y-auto leading-relaxed scrollbar-hide"
           />
           <div className="absolute bottom-6 left-0 w-full flex justify-between items-center px-6 md:px-8">
             <button className="w-10 h-10 rounded-full border border-zinc-200 flex items-center justify-center text-zinc-500 hover:bg-zinc-50 transition-colors">
