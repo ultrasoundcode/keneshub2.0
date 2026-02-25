@@ -14,25 +14,36 @@ const connectionString = process.env.DATABASE_URL;
 
 if (process.env.NODE_ENV === "production") {
   if (!connectionString) {
-    throw new Error("DATABASE_URL is missing in production environment");
+    throw new Error("CRITICAL: DATABASE_URL is missing in production environment");
   }
 
+  // Neon-specific optimization for serverless
   const pool = new Pool({ connectionString });
-  // @ts-expect-error - PrismaNeon type mismatch in v7
+  // @ts-expect-error - Prisma 7 adapter types can be tricky
   const adapter = new PrismaNeon(pool);
   
   prismaInstance = new PrismaClient({
     adapter,
+    datasources: {
+      db: {
+        url: connectionString,
+      },
+    },
     log: ["error", "warn"],
   });
 } else {
   if (!globalForPrisma.prisma) {
     if (connectionString) {
       const pool = new Pool({ connectionString });
-      // @ts-expect-error - PrismaNeon type mismatch in v7
+      // @ts-expect-error - Prisma 7 adapter types can be tricky
       const adapter = new PrismaNeon(pool);
       globalForPrisma.prisma = new PrismaClient({
         adapter,
+        datasources: {
+          db: {
+            url: connectionString,
+          },
+        },
         log: ["query", "error", "warn"],
       });
     } else {
