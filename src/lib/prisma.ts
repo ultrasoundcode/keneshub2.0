@@ -11,14 +11,13 @@ let prismaInstance: PrismaClient;
 
 const connectionString = process.env.DATABASE_URL;
 
-if (!connectionString) {
-  console.error("CRITICAL: DATABASE_URL is not defined in environment variables!");
-}
-
 if (process.env.NODE_ENV === "production") {
+  console.log("PRISMA PRODUCTION INIT: DATABASE_URL exists =", !!connectionString, "length =", connectionString?.length, "suffix =", connectionString?.slice(-4));
+  
   if (!connectionString) {
-    throw new Error("DATABASE_URL is required in production");
+    throw new Error("DATABASE_URL is required in production but was not found in process.env");
   }
+
   const pool = new Pool({ connectionString });
   // @ts-ignore
   const adapter = new PrismaNeon(pool);
@@ -27,6 +26,7 @@ if (process.env.NODE_ENV === "production") {
     log: ["error"],
   });
 } else {
+  console.log("PRISMA DEV INIT: DATABASE_URL exists =", !!connectionString);
   if (!globalForPrisma.prisma) {
     if (connectionString) {
       const pool = new Pool({ connectionString });
