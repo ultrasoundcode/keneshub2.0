@@ -23,7 +23,6 @@ if (process.env.NODE_ENV === "production") {
   
   prismaInstance = new PrismaClient({
     adapter,
-    datasourceUrl: connectionString,
     log: ["error", "warn"],
   });
 } else {
@@ -34,7 +33,6 @@ if (process.env.NODE_ENV === "production") {
       const adapter = new PrismaNeon(pool);
       globalForPrisma.prisma = new PrismaClient({
         adapter,
-        datasourceUrl: connectionString,
         log: ["query", "error", "warn"],
       });
     } else {
