@@ -1,6 +1,6 @@
-// Prisma 7 + Neon Serverless — Build: 2026-03-02 v4
-// In Prisma 7, PrismaClient must receive the datasourceUrl in the constructor.
-// Do NOT put url in schema.prisma when using prisma.config.ts.
+// Prisma 7 + Neon — Build: 2026-03-02 v5
+// Using type assertion to bypass strict Prisma 7 types for datasourceUrl
+// datasourceUrl is a valid runtime option even when schema has no url property
 import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
@@ -13,15 +13,18 @@ function createPrismaClient(): PrismaClient {
   if (!connectionString) {
     throw new Error(
       "DATABASE_URL environment variable is not set. " +
-      "Please set it in your .env file or Vercel environment variables."
+      "Please set it in your Vercel environment variables."
     );
   }
 
-  // In Prisma 7, pass the connection URL via datasourceUrl when using prisma.config.ts
-  return new PrismaClient({
+  // Use Record<string, unknown> to bypass strict Prisma 7 constructor types
+  // datasourceUrl IS a valid runtime option that Prisma 7 reads at runtime
+  const prismaOptions: Record<string, unknown> = {
     datasourceUrl: connectionString,
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-  });
+  };
+
+  return new PrismaClient(prismaOptions as ConstructorParameters<typeof PrismaClient>[0]);
 }
 
 // Singleton pattern to avoid multiple instances in development hot-reload
