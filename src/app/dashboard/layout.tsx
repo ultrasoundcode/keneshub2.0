@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -18,7 +19,14 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/");
+    router.refresh();
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fbfbfb]">
@@ -105,10 +113,10 @@ export default function DashboardLayout({
               </nav>
 
               <div className="p-4 border-t border-zinc-200">
-                <button className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-zinc-500 font-medium hover:bg-zinc-100/50 transition-colors">
-                  <LogOut className="w-4.5 h-4.5" />
-                  Выйти
-                </button>
+              <button onClick={handleLogout} className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-zinc-500 font-medium hover:bg-zinc-100/50 transition-colors">
+                <LogOut className="w-4 h-4" />
+                Выйти
+              </button>
               </div>
             </motion.aside>
           </>

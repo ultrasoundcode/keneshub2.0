@@ -17,7 +17,8 @@ export default function DashboardPage() {
   const handleInput = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      const newHeight = Math.min(textareaRef.current.scrollHeight, 300);
+      textareaRef.current.style.height = `${newHeight}px`;
     }
   };
 
@@ -46,7 +47,7 @@ export default function DashboardPage() {
             onChange={handleInput}
             rows={1}
             placeholder="Опишите вашу долговую ситуацию или задайте вопрос..."
-            className="w-full bg-transparent resize-none outline-none text-zinc-900 placeholder:text-zinc-400 text-lg sm:text-xl px-6 py-6 sm:px-8 sm:py-8 max-h-[300px] overflow-y-auto"
+            className="w-full bg-transparent resize-none outline-none text-zinc-900 placeholder:text-zinc-400 text-lg sm:text-xl px-6 py-6 sm:px-8 sm:py-8 max-h-[300px] overflow-y-auto leading-relaxed scrollbar-hide"
           />
           <div className="absolute bottom-6 left-0 w-full flex justify-between items-center px-6 sm:px-8">
             <button className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-zinc-200 flex items-center justify-center text-zinc-500 hover:bg-zinc-50 transition-colors">
