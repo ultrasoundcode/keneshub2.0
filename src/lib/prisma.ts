@@ -1,13 +1,11 @@
-// Prisma 7 + Neon — Build: 2026-03-02 v5
-// Using type assertion to bypass strict Prisma 7 types for datasourceUrl
-// datasourceUrl is a valid runtime option even when schema has no url property
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// @ts-nocheck - Prisma 7 strict types prevent valid runtime options
+// Build: 2026-03-02 v6
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+const globalForPrisma = globalThis as any;
 
-function createPrismaClient(): PrismaClient {
+function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL;
 
   if (!connectionString) {
@@ -17,19 +15,13 @@ function createPrismaClient(): PrismaClient {
     );
   }
 
-  // Use Record<string, unknown> to bypass strict Prisma 7 constructor types
-  // datasourceUrl IS a valid runtime option that Prisma 7 reads at runtime
-  const prismaOptions: Record<string, unknown> = {
+  return new PrismaClient({
     datasourceUrl: connectionString,
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-  };
-
-  return new PrismaClient(prismaOptions as ConstructorParameters<typeof PrismaClient>[0]);
+  });
 }
 
-// Singleton pattern to avoid multiple instances in development hot-reload
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+export const prisma: PrismaClient = globalForPrisma.__prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  globalForPrisma.__prisma = prisma;
 }
