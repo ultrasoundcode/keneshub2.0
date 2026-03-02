@@ -77,11 +77,24 @@ export default function RegisterPage() {
 
       {/* Form */}
       <div className="bg-white border border-gray-200 shadow-sm rounded-2xl p-8">
-        {/* Google OAuth */}
-        <button className="w-full flex items-center justify-center gap-3 py-3 rounded-full border border-gray-300 hover:bg-gray-100 transition-all duration-300 mb-6">
-          <Chrome className="w-5 h-5 text-gray-900" />
-          <span className="text-sm text-gray-900 font-medium">Регистрация через Google</span>
-        </button>
+        {/* Social Auth Buttons */}
+        <div className="space-y-3 mb-6">
+          <button className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition-all duration-300">
+            <Chrome className="w-5 h-5 text-gray-900" />
+            <span className="text-sm text-gray-900 font-medium">Регистрация через Google</span>
+          </button>
+          
+          <Link 
+            href="https://wa.me/77000000000?text=Здравствуйте%2C%20я%20хочу%20зарегистрироваться%20в%20Keneshub." 
+            target="_blank"
+            className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-green-100 bg-green-50/50 hover:bg-green-50 hover:border-green-200 transition-all duration-300"
+          >
+            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+              <span className="text-[10px] text-white font-bold">W</span>
+            </div>
+            <span className="text-sm text-green-800 font-medium">Регистрация через WhatsApp</span>
+          </Link>
+        </div>
 
         <div className="flex items-center gap-3 mb-6">
           <div className="flex-1 h-px bg-gray-100" />
