@@ -7,9 +7,13 @@ const globalForPrisma = globalThis as any;
 function createPrismaClient(): PrismaClient {
   const url = process.env.DATABASE_URL;
   
-  // High resilience constructor for Prisma 7
+  if (!url) {
+    console.warn("WARNING: DATABASE_URL is not set. This might cause issues during build or runtime.");
+  }
+
+  // Purely using datasources which is the standard override method.
+  // Casting to any to avoid strict Prisma 7 type conflicts on Vercel.
   return new PrismaClient({
-    datasourceUrl: url,
     datasources: {
       db: {
         url: url
