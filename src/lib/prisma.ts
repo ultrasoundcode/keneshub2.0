@@ -1,6 +1,6 @@
-// Prisma 7 + Neon Serverless
-// When using an adapter, the connection is managed entirely by the Pool.
-// Do NOT pass datasourceUrl or datasources to the constructor.
+// Prisma 7 + Neon Serverless — Build: 2026-03-02 v2
+// Correct usage: Create Pool with connectionString, pass to PrismaNeon adapter.
+// Do NOT use datasources or datasourceUrl in the PrismaClient constructor.
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { Pool } from "@neondatabase/serverless";
@@ -20,16 +20,17 @@ function createPrismaClient(): PrismaClient {
     );
   }
 
+  // Create Neon connection pool with the connection string
   const pool = new Pool({ connectionString });
+  
+  // Create the Prisma adapter for Neon
+  // The @ts-expect-error is needed because the Prisma 7 types for the adapter
+  // are not fully aligned with the @prisma/adapter-neon package yet
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   const adapter = new PrismaNeon(pool);
 
-  return new PrismaClient({
-    // @ts-expect-error - Prisma 7 adapter type — works at runtime
-    adapter,
-    log: process.env.NODE_ENV === "development"
-      ? ["query", "error", "warn"]
-      : ["error"],
-  });
+  return new PrismaClient({ adapter });
 }
 
 // Singleton pattern to avoid multiple instances in development hot-reload
