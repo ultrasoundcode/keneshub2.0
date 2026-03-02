@@ -1,58 +1,40 @@
+// Prisma 7 + Neon Serverless
+// When using an adapter, the connection is managed entirely by the Pool.
+// Do NOT pass datasourceUrl or datasources to the constructor.
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { Pool } from "@neondatabase/serverless";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-// Lazy initialization to avoid module-scope crashes
-let prismaInstance: PrismaClient;
-
-// Final production initialization - 2026-02-25
-const connectionString = process.env.DATABASE_URL;
-
-if (process.env.NODE_ENV === "production") {
-  if (!connectionString) {
-    throw new Error("CRITICAL: DATABASE_URL is missing in production environment");
-  }
-
-  // Neon-specific optimization for serverless
-  const pool = new Pool({ connectionString });
-  // @ts-expect-error - Prisma 7 adapter types can be tricky
-  const adapter = new PrismaNeon(pool);
-  
-  prismaInstance = new PrismaClient({
-    adapter,
-    datasources: {
-      db: {
-        url: connectionString,
-      },
-    },
-    log: ["error", "warn"],
-  });
-} else {
-  if (!globalForPrisma.prisma) {
-    if (connectionString) {
-      const pool = new Pool({ connectionString });
-      // @ts-expect-error - Prisma 7 adapter types can be tricky
-      const adapter = new PrismaNeon(pool);
-      globalForPrisma.prisma = new PrismaClient({
-        adapter,
-        datasources: {
-          db: {
-            url: connectionString,
-          },
-        },
-        log: ["query", "error", "warn"],
-      });
-    } else {
-      globalForPrisma.prisma = new PrismaClient({
-        log: ["query", "error", "warn"],
-      });
-    }
-  }
-  prismaInstance = globalForPrisma.prisma;
+declare global {
+  // eslint-disable-next-line no-var
+  var __prisma: PrismaClient | undefined;
 }
 
-export const prisma = prismaInstance;
+function createPrismaClient(): PrismaClient {
+  const connectionString = process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    throw new Error(
+      "DATABASE_URL environment variable is not set. " +
+      "Please set it in your .env file or Vercel environment variables."
+    );
+  }
+
+  const pool = new Pool({ connectionString });
+  const adapter = new PrismaNeon(pool);
+
+  return new PrismaClient({
+    // @ts-expect-error - Prisma 7 adapter type — works at runtime
+    adapter,
+    log: process.env.NODE_ENV === "development"
+      ? ["query", "error", "warn"]
+      : ["error"],
+  });
+}
+
+// Singleton pattern to avoid multiple instances in development hot-reload
+export const prisma = global.__prisma ?? createPrismaClient();
+
+if (process.env.NODE_ENV !== "production") {
+  global.__prisma = prisma;
+}
