@@ -1,27 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// @ts-nocheck
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as any;
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
-function createPrismaClient(): PrismaClient {
-  const url = process.env.DATABASE_URL;
-  
-  if (!url) {
-    console.warn("WARNING: DATABASE_URL is not set. This might cause issues during build or runtime.");
-  }
+// Classic singleton for Prisma 6
+export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 
-  // Purely using datasources which is the standard override method.
-  // Casting to any to avoid strict Prisma 7 type conflicts on Vercel.
-  return new PrismaClient({
-    datasources: {
-      db: {
-        url: url
-      }
-    }
-  } as any);
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
 }
-
-export const prisma: PrismaClient = globalForPrisma.prisma || createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
