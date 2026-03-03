@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+"use client";
+
+import { useState, useRef, useEffect, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { Send, Bot, User, Sparkles, RotateCcw } from "lucide-react";
@@ -19,13 +21,14 @@ const sampleMessages: Message[] = [
   },
 ];
 
-export default function AIAssistantPage() {
+function AIAssistantContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q");
 
   const [messages, setMessages] = useState<Message[]>(sampleMessages);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -65,7 +68,8 @@ export default function AIAssistantPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: messages.map(m => ({ role: m.role, content: m.content })).concat({ role: "user", content: messageContent })
+          messages: messages.map(m => ({ role: m.role, content: m.content })).concat({ role: "user", content: messageContent }),
+          conversationId: conversationId
         }),
       });
 
@@ -96,18 +100,21 @@ export default function AIAssistantPage() {
 
           for (const line of lines) {
             if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") break;
+              const dataStr = line.replace("data: ", "").trim();
+              if (dataStr === "[DONE]") break;
 
               try {
-                const { content } = JSON.parse(data);
-                if (content) {
-                  aiContent += content;
+                const data = JSON.parse(dataStr);
+                if (data.content) {
+                  aiContent += data.content;
                   setMessages((prev) =>
                     prev.map((msg) =>
                       msg.id === aiMessageId ? { ...msg, content: aiContent } : msg
                     )
                   );
+                }
+                if (data.conversationId) {
+                  setConversationId(data.conversationId);
                 }
               } catch (e) {
                 console.error("Error parsing AI chunk", e);
@@ -160,29 +167,26 @@ export default function AIAssistantPage() {
             animate={{ opacity: 1, y: 0 }}
             className={`flex gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
           >
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm ${
               message.role === "assistant"
-                ? "bg-gray-900 text-white"
-                : "bg-gray-200"
+                ? "bg-zinc-900 text-white"
+                : "bg-white border border-gray-200 text-gray-400"
             }`}>
               {message.role === "assistant" ? (
-                <Bot className="w-4 h-4 text-gray-900" />
+                <Bot className="w-4 h-4" />
               ) : (
-                <User className="w-4 h-4 text-gray-300" />
+                <User className="w-4 h-4" />
               )}
             </div>
             <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
               message.role === "assistant"
-                ? "bg-white border border-gray-200 shadow-sm rounded-2xl border border-gray-200 rounded-bl-md"
-                : "bg-gray-100 border border-gray-200 rounded-br-md"
+                ? "bg-white border border-gray-200 shadow-sm rounded-bl-none"
+                : "bg-zinc-900 text-white shadow-lg shadow-zinc-200 rounded-br-none"
             }`}>
-              <div className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">
-                {message.content.split(/(\*\*.*?\*\*)/).map((part, i) => {
-                  if (part.startsWith("**") && part.endsWith("**")) {
-                    return <strong key={i} className="text-gray-900">{part.slice(2, -2)}</strong>;
-                  }
-                  return part;
-                })}
+              <div className={`text-sm leading-relaxed whitespace-pre-wrap ${
+                message.role === "assistant" ? "text-gray-800" : "text-white"
+              }`}>
+                {message.content}
               </div>
             </div>
           </motion.div>
@@ -195,18 +199,13 @@ export default function AIAssistantPage() {
             animate={{ opacity: 1, y: 0 }}
             className="flex gap-3"
           >
-            <div className="w-8 h-8 rounded-lg bg-gray-900 text-white flex items-center justify-center">
-              <Bot className="w-4 h-4 text-gray-900" />
+            <div className="w-8 h-8 rounded-lg bg-zinc-900 text-white flex items-center justify-center shadow-sm">
+              <Bot className="w-4 h-4" />
             </div>
-            <div className="bg-white border border-gray-200 shadow-sm rounded-2xl rounded-bl-md px-4 py-3 border border-gray-200">
+            <div className="bg-white border border-gray-200 shadow-sm rounded-2xl rounded-bl-none px-4 py-3">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-gray-900 animate-pulse" />
+                <Sparkles className="w-3.5 h-3.5 text-zinc-900 animate-pulse" />
                 <span className="text-xs text-gray-500">Keneshub AI анализирует...</span>
-                <div className="flex gap-1">
-                  <span className="ai-typing-dot" />
-                  <span className="ai-typing-dot" />
-                  <span className="ai-typing-dot" />
-                </div>
               </div>
             </div>
           </motion.div>
@@ -215,7 +214,7 @@ export default function AIAssistantPage() {
       </div>
 
       {/* Input */}
-      <div className="bg-white border border-gray-200 shadow-sm rounded-2xl p-3 border border-gray-200">
+      <div className="bg-white border border-gray-200 shadow-sm rounded-2xl p-3">
         <form onSubmit={handleSend} className="flex items-end gap-3">
           <textarea
             ref={textareaRef}
@@ -235,21 +234,33 @@ export default function AIAssistantPage() {
             }}
             placeholder="Опишите вашу ситуацию..."
             rows={1}
-            className="flex-1 bg-transparent text-gray-900 text-sm placeholder:text-gray-600 resize-none focus:outline-none py-2 px-2 max-h-32"
+            className="flex-1 bg-transparent text-gray-900 text-sm placeholder:text-gray-400 resize-none focus:outline-none py-2 px-2 max-h-32"
           />
           <button
             type="submit"
             disabled={!input.trim() || isTyping}
-            className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center text-gray-900 hover:shadow-lg hover:shadow-accent-blue/20 transition-all disabled:opacity-50 disabled:hover:shadow-none flex-shrink-0"
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                input.trim() && !isTyping 
+                ? "bg-zinc-900 text-white shadow-lg shadow-zinc-200 hover:scale-105 active:scale-95" 
+                : "bg-gray-100 text-zinc-400"
+            }`}
           >
             <Send className="w-4 h-4" />
           </button>
         </form>
         <div className="flex items-center justify-between mt-2 px-2">
-          <span className="text-xs text-gray-600">14/20 запросов использовано</span>
-          <span className="text-xs text-gray-600">Shift + Enter для новой строки</span>
+          <span className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">Бета-версия AI</span>
+          <span className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">Shift + Enter для новой строки</span>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AIAssistantPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" /></div>}>
+      <AIAssistantContent />
+    </Suspense>
   );
 }
