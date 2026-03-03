@@ -1,19 +1,20 @@
-"use client";
-
-import { useRef } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Plus, ArrowUp, BriefcaseBusiness, FileText, Scale, Coins } from "lucide-react";
 
 export default function Hero() {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [isPlaceholder, setIsPlaceholder] = useState(true);
+  const placeholderText = "Опишите вашу долговую ситуацию или задайте вопрос...";
 
-  const handleInput = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      // Slightly more compact height limits for better focus
-      const newHeight = Math.max(120, Math.min(textareaRef.current.scrollHeight, 400));
-      textareaRef.current.style.height = `${newHeight}px`;
+  const handleSend = () => {
+    if (query.trim() && query !== placeholderText) {
+      router.push(`/register?query=${encodeURIComponent(query)}`);
+    } else {
+      router.push("/register");
     }
   };
 
@@ -52,16 +53,33 @@ export default function Hero() {
         transition={{ duration: 0.7, delay: 0.2 }}
         className="w-full max-w-3xl"
       >
-        <div className="bg-white rounded-[32px] border border-zinc-200 shadow-[0_8px_32px_rgba(0,0,0,0.04)] min-h-[140px] md:min-h-[180px] relative pb-16 transition-all duration-300 focus-within:shadow-[0_8px_48px_rgba(0,0,0,0.08)] focus-within:border-zinc-300">
-          <textarea 
-            ref={textareaRef}
-            onChange={handleInput}
-            rows={1}
-            placeholder="Опишите вашу долговую ситуацию или задайте вопрос..."
-            className="w-full bg-transparent resize-none outline-none text-zinc-900 placeholder:text-zinc-400 text-xl px-8 pt-8 pb-4 md:px-12 md:pt-10 md:pb-6 min-h-[120px] max-h-[400px] overflow-y-auto leading-relaxed scrollbar-hide"
-          />
-          <div className="absolute bottom-5 left-0 w-full flex justify-between items-center px-6 md:px-10">
-            <div className="flex gap-2">
+        <div className="bg-white rounded-[32px] border border-zinc-200 shadow-[0_8px_32px_rgba(0,0,0,0.04)] min-h-[140px] md:min-h-[180px] relative pb-16 transition-all duration-300 focus-within:shadow-[0_8px_48px_rgba(0,0,0,0.08)] focus-within:border-zinc-300 overflow-hidden group">
+          <div 
+            contentEditable
+            onInput={(e) => {
+              setQuery(e.currentTarget.innerText);
+            }}
+            onFocus={(e) => {
+              if (isPlaceholder) {
+                e.currentTarget.innerText = "";
+                setIsPlaceholder(false);
+              }
+            }}
+            onBlur={(e) => {
+              if (e.currentTarget.innerText.trim() === "") {
+                e.currentTarget.innerText = placeholderText;
+                setIsPlaceholder(true);
+              }
+            }}
+            suppressContentEditableWarning
+            className={`w-full bg-transparent outline-none text-xl px-8 pt-8 pb-4 md:px-12 md:pt-10 md:pb-6 min-h-[120px] max-h-[400px] overflow-y-auto leading-relaxed scrollbar-hide ${
+              isPlaceholder ? "text-zinc-400" : "text-zinc-900"
+            }`}
+          >
+            {placeholderText}
+          </div>
+          <div className="absolute bottom-5 left-0 w-full flex justify-between items-center px-6 md:px-10 pointer-events-none">
+            <div className="flex gap-2 pointer-events-auto">
               <button className="w-10 h-10 rounded-full border border-zinc-200 flex items-center justify-center text-zinc-500 hover:bg-zinc-50 transition-colors">
                 <Plus className="w-5 h-5" />
               </button>
@@ -75,9 +93,12 @@ export default function Hero() {
                 WhatsApp
               </Link>
             </div>
-            <Link href="/register" className="w-10 h-10 rounded-full bg-zinc-900 text-white flex items-center justify-center hover:bg-zinc-800 transition-colors shadow-lg shadow-zinc-200">
+            <button 
+              onClick={handleSend}
+              className="w-10 h-10 rounded-full bg-zinc-900 text-white flex items-center justify-center hover:bg-zinc-800 transition-colors shadow-lg shadow-zinc-200 pointer-events-auto"
+            >
               <ArrowUp className="w-5 h-5" />
-            </Link>
+            </button>
           </div>
         </div>
 

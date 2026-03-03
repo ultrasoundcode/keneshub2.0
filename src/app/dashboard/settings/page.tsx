@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { User, Mail, Lock, Bell, Shield, Save } from "lucide-react";
+import { User, Lock, Bell, Save } from "lucide-react";
 
 export default function SettingsPage() {
   const [formData, setFormData] = useState({
@@ -10,6 +10,28 @@ export default function SettingsPage() {
     email: "user@example.com",
     notifications: true,
   });
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (res.ok) {
+        alert("Настройки сохранены!");
+      } else {
+        throw new Error("Ошибка");
+      }
+    } catch {
+      alert("Не удалось сохранить настройки");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
@@ -23,7 +45,7 @@ export default function SettingsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white border border-gray-200 shadow-sm rounded-2xl rounded-xl p-6"
+        className="bg-white border border-gray-200 shadow-sm rounded-2xl p-6"
       >
         <h2 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <User className="w-4 h-4 text-gray-900" />
@@ -35,15 +57,15 @@ export default function SettingsPage() {
             <input
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full py-2.5 px-4 rounded-xl bg-white/[0.03] border border-gray-300 text-gray-900 text-sm focus:outline-none focus:border-accent-blue/50 transition-all"
+              className="w-full py-2.5 px-4 rounded-xl bg-white border border-gray-300 text-gray-900 text-sm focus:outline-none focus:border-zinc-900 transition-all"
             />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-2">Email</label>
             <input
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full py-2.5 px-4 rounded-xl bg-white/[0.03] border border-gray-300 text-gray-900 text-sm focus:outline-none focus:border-accent-blue/50 transition-all"
+              disabled
+              className="w-full py-2.5 px-4 rounded-xl bg-gray-50 border border-gray-200 text-gray-400 text-sm focus:outline-none cursor-not-allowed"
             />
           </div>
         </div>
@@ -54,7 +76,7 @@ export default function SettingsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-white border border-gray-200 shadow-sm rounded-2xl rounded-xl p-6"
+        className="bg-white border border-gray-200 shadow-sm rounded-2xl p-6"
       >
         <h2 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Lock className="w-4 h-4 text-gray-900" />
@@ -66,7 +88,7 @@ export default function SettingsPage() {
             <input
               type="password"
               placeholder="••••••••"
-              className="w-full py-2.5 px-4 rounded-xl bg-white/[0.03] border border-gray-300 text-gray-900 text-sm placeholder:text-gray-600 focus:outline-none focus:border-accent-blue/50 transition-all"
+              className="w-full py-2.5 px-4 rounded-xl bg-white border border-gray-300 text-gray-900 text-sm placeholder:text-gray-400 focus:outline-none focus:border-zinc-900 transition-all"
             />
           </div>
           <div>
@@ -74,7 +96,7 @@ export default function SettingsPage() {
             <input
               type="password"
               placeholder="Минимум 8 символов"
-              className="w-full py-2.5 px-4 rounded-xl bg-white/[0.03] border border-gray-300 text-gray-900 text-sm placeholder:text-gray-600 focus:outline-none focus:border-accent-blue/50 transition-all"
+              className="w-full py-2.5 px-4 rounded-xl bg-white border border-gray-300 text-gray-900 text-sm placeholder:text-gray-400 focus:outline-none focus:border-zinc-900 transition-all"
             />
           </div>
         </div>
@@ -85,7 +107,7 @@ export default function SettingsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="bg-white border border-gray-200 shadow-sm rounded-2xl rounded-xl p-6"
+        className="bg-white border border-gray-200 shadow-sm rounded-2xl p-6"
       >
         <h2 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Bell className="w-4 h-4 text-gray-900" />
@@ -99,7 +121,7 @@ export default function SettingsPage() {
           <button
             onClick={() => setFormData({ ...formData, notifications: !formData.notifications })}
             className={`w-11 h-6 rounded-full transition-all duration-300 relative ${
-              formData.notifications ? "bg-accent-blue" : "bg-gray-200"
+              formData.notifications ? "bg-zinc-900" : "bg-gray-200"
             }`}
           >
             <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${
@@ -110,9 +132,17 @@ export default function SettingsPage() {
       </motion.div>
 
       {/* Save */}
-      <button className="btn-primary flex items-center gap-2">
-        <Save className="w-4 h-4" />
-        Сохранить изменения
+      <button 
+        onClick={handleSave}
+        disabled={isSaving}
+        className="bg-zinc-900 text-white px-6 py-3 rounded-xl flex items-center gap-2 hover:bg-zinc-800 transition-all disabled:opacity-50"
+      >
+        {isSaving ? "Сохранение..." : (
+          <>
+            <Save className="w-4 h-4" />
+            Сохранить изменения
+          </>
+        )}
       </button>
     </div>
   );

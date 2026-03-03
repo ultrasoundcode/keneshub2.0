@@ -1,7 +1,6 @@
-"use client";
-
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useSearchParams } from "next/navigation";
 import { Send, Bot, User, Sparkles, RotateCcw } from "lucide-react";
 
 interface Message {
@@ -21,6 +20,9 @@ const sampleMessages: Message[] = [
 ];
 
 export default function AIAssistantPage() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q");
+
   const [messages, setMessages] = useState<Message[]>(sampleMessages);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -35,14 +37,22 @@ export default function AIAssistantPage() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
+  // Handle initial query from dashboard
+  useEffect(() => {
+    if (initialQuery && messages.length === 1) {
+      handleSend(undefined, initialQuery);
+    }
+  }, [initialQuery, messages.length]);
+
+  const handleSend = async (e?: React.FormEvent, directInput?: string) => {
+    if (e) e.preventDefault();
+    const messageContent = directInput || input;
+    if (!messageContent.trim()) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input,
+      content: messageContent,
       timestamp: new Date(),
     };
 
@@ -50,17 +60,74 @@ export default function AIAssistantPage() {
     setInput("");
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: messages.map(m => ({ role: m.role, content: m.content })).concat({ role: "user", content: messageContent })
+        }),
+      });
+
+      if (!response.ok) throw new Error("Ошибка AI");
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let aiContent = "";
+
+      const aiMessageId = (Date.now() + 1).toString();
       const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: aiMessageId,
         role: "assistant",
-        content: `Спасибо за ваш вопрос. На основании предоставленной информации и законодательства РК, могу сообщить следующее:\n\n1. **Ваши права защищены** — согласно Закону РК «О защите прав потребителей финансовых услуг», кредитор обязан предоставить полную информацию о задолженности.\n\n2. **Рекомендации:**\n   - Запросите полную выписку по кредиту\n   - Проверьте законность начисленных штрафов\n   - Рассмотрите возможность реструктуризации\n\n3. **Следующий шаг:** Для более детального анализа рекомендую загрузить кредитный договор в раздел «Документы».\n\nХотите, чтобы я подготовил заявление на реструктуризацию?`,
+        content: "",
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, aiMessage]);
       setIsTyping(false);
-    }, 2500);
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              if (data === "[DONE]") break;
+
+              try {
+                const { content } = JSON.parse(data);
+                if (content) {
+                  aiContent += content;
+                  setMessages((prev) =>
+                    prev.map((msg) =>
+                      msg.id === aiMessageId ? { ...msg, content: aiContent } : msg
+                    )
+                  );
+                }
+              } catch (e) {
+                console.error("Error parsing AI chunk", e);
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("AI Error:", err);
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: "Извините, произошла ошибка при общении с AI. Пожалуйста, попробуйте позже.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   return (
